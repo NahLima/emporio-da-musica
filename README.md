@@ -121,6 +121,18 @@ This runs the 5 scenarios through the **real** agent and writes `.md`
 transcripts (with the tool calls shown) to `examples/`. It refuses to run
 without `GEMINI_API_KEY` — transcripts are never fabricated.
 
+Transient Gemini errors are retried, not fatal: a `503 UNAVAILABLE`
+("model is currently experiencing high demand") is retried twice, after
+30s and then 90s, before the agent gives up. The runner is also
+resumable — a transcript that already exists is skipped, and a scenario
+that fails does not stop the others, so re-running the same command
+after an interruption finishes the missing transcripts instead of
+starting over. Use `--force` to regenerate everything.
+
+On 2026-10-31 the first run on a real machine hit exactly that 503 on
+`gemini-3.8-flash` (a demand spike on the newly launched model) and
+aborted; the retry and resume behaviour above was added because of it.
+
 ## Example 4 — the non-trivial case
 
 "Me arrependi da minha compra, posso devolver?" is answered by a real

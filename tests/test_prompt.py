@@ -144,6 +144,67 @@ def test_missing_api_key_raises_a_clear_error(tmp_path):
         )
 
 
+# -- Transient-error retry ---------------------------------------------------
+
+class FlakyModels(FakeModels):
+    """Raises the given errors in order, then returns the responses."""
+
+    def __init__(self, errors, responses):
+        super().__init__(responses)
+        self.errors = list(errors)
+
+    def generate_content(self, model, contents, config):
+        if self.errors:
+            self.calls += 1
+            raise self.errors.pop(0)
+        return super().generate_content(model, contents, config)
+
+
+class FlakyClient:
+    def __init__(self, errors, responses):
+        self.models = FlakyModels(errors, responses)
+
+
+def test_transient_503_is_retried_and_recovers(tmp_path):
+    """A 503 UNAVAILABLE (demand spike) must be retried, not crash the chat.
+
+    Regression: 2026-10-31, gemini-3.8-flash returned 503 on the first
+    turn of run_examples.py on the user's machine, aborting the whole run.
+    """
+    client = FlakyClient(
+        [Exception("503 UNAVAILABLE. This model is currently experiencing "
+                   "high demand."), Exception("503 UNAVAILABLE.")],
+        [FakeResponse(text="Olá! Como posso ajudar?")],
+    )
+    agent = GeminiAgent(
+        client=client,
+        today="2026-02-20",
+        session_id="test-retry",
+        sessions_dir=tmp_path,
+    )
+    agent.retry_delays = (0, 0)
+    result = agent.chat("Oi!")
+    assert result["reply"] == "Olá! Como posso ajudar?"
+    assert client.models.calls == 3
+
+
+def test_non_transient_error_is_not_retried(tmp_path):
+    client = FlakyClient(
+        [Exception("400 INVALID_ARGUMENT. Bad request.")],
+        [FakeResponse(text="never")],
+    )
+    agent = GeminiAgent(
+        client=client,
+        today="2026-02-20",
+        session_id="test-no-retry",
+        sessions_dir=tmp_path,
+    )
+    agent.retry_delays = (0, 0)
+    with pytest.raises(Exception, match="400 INVALID_ARGUMENT"):
+        agent.chat("Oi!")
+    assert client.models.calls == 1
+
+
 # -- History across restarts ---------------------------------------------------
 
 def test_resumed_session_keeps_llm_context(tmp_path):

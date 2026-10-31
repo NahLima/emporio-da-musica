@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+import time
 import uuid
 from datetime import date
 from pathlib import Path
@@ -37,6 +39,37 @@ from .tools import StoreTools, is_injection_attempt
 
 DEFAULT_MODEL = "gemini-3.8-flash"
 MAX_TOOL_TURNS = 8
+# Waits between retries of a transient Gemini error (503/429/500, dropped
+# connection). The SDK already retries fast internally; these longer waits
+# give a demand spike time to pass. Tests set the instance attribute
+# ``retry_delays`` to (0, 0) instead of waiting.
+RETRY_DELAYS = (30, 90)
+
+
+def _is_transient_error(exc: Exception) -> bool:
+    """True for errors worth retrying: overload, rate limit, 5xx, disconnect."""
+    code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
+    if isinstance(code, int) and code in (429, 500, 502, 503, 504):
+        return True
+    message = str(exc)
+    if any(
+        token in message
+        for token in (
+            "503",
+            "429",
+            "500",
+            "UNAVAILABLE",
+            "RESOURCE_EXHAUSTED",
+            "DEADLINE_EXCEEDED",
+            "Server disconnected",
+        )
+    ):
+        return True
+    return type(exc).__name__ in (
+        "RemoteProtocolError",
+        "ConnectError",
+        "ReadTimeout",
+    )
 
 
 def _string_schema(description: str) -> types.Schema:
@@ -204,6 +237,7 @@ class GeminiAgent:
         self.model = model or os.environ.get("GEMINI_MODEL", DEFAULT_MODEL)
         self.today = self._coerce_date(today) if today else date.today()
         self.session_id = session_id or uuid.uuid4().hex[:8]
+        self.retry_delays = RETRY_DELAYS
         self.sessions_dir = Path(
             sessions_dir
             or Path(__file__).resolve().parent.parent / "sessions"
@@ -360,6 +394,41 @@ class GeminiAgent:
             order_id, self.today, reason=reason
         )
 
+    # -- Model calls ---------------------------------------------------------
+    def _generate_with_retry(
+        self, contents: list, config: types.GenerateContentConfig
+    ):
+        """Call generate_content, retrying transient errors with long waits.
+
+        A 503 UNAVAILABLE ("model is currently experiencing high demand")
+        is transient: the SDK's own fast retries do not outlast a demand
+        spike, so this loop waits 30s and then 90s before giving up. A
+        non-transient error (400, 404, auth) is raised immediately.
+        """
+        last_error: Exception | None = None
+        for attempt in range(len(self.retry_delays) + 1):
+            try:
+                return self.client.models.generate_content(
+                    model=self.model,
+                    contents=contents,
+                    config=config,
+                )
+            except Exception as exc:  # noqa: BLE001 - re-raised below
+                last_error = exc
+                if not _is_transient_error(exc) or attempt >= len(
+                    self.retry_delays
+                ):
+                    raise
+                delay = self.retry_delays[attempt]
+                print(
+                    f"[agent] Transient Gemini error ({exc}); retrying in "
+                    f"{delay}s (attempt {attempt + 2}/"
+                    f"{len(self.retry_delays) + 1})...",
+                    file=sys.stderr,
+                )
+                time.sleep(delay)
+        raise last_error  # pragma: no cover - loop always returns or raises
+
     # -- Conversation ---------------------------------------------------------
     def chat(self, user_text: str) -> dict:
         """Answer one user message. Returns reply + the tool calls made."""
@@ -390,11 +459,7 @@ class GeminiAgent:
         )
         reply = ""
         for _ in range(MAX_TOOL_TURNS):
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=self._contents,
-                config=config,
-            )
+            response = self._generate_with_retry(self._contents, config)
             calls = list(getattr(response, "function_calls", None) or [])
             if not calls:
                 reply = (getattr(response, "text", None) or "").strip()

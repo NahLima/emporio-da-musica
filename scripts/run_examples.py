@@ -138,6 +138,11 @@ def main(argv: list[str] | None = None) -> int:
         default="examples",
         help="Directory for the generated .md transcripts.",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Regenerate transcripts that already exist.",
+    )
     args = parser.parse_args(argv)
 
     if not os.environ.get("GEMINI_API_KEY"):
@@ -153,9 +158,29 @@ def main(argv: list[str] | None = None) -> int:
     model = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    failed = []
     for scenario in SCENARIOS:
-        path = run_scenario(scenario, out_dir, model)
+        # Resumable: a scenario whose transcript already exists is skipped,
+        # so a run interrupted by a transient 503 can be resumed with the
+        # same command instead of regenerating everything.
+        path = out_dir / f"{scenario['id']}-{scenario['slug']}.md"
+        if path.exists() and not args.force:
+            print(f"Skipping {path} (already exists; use --force to redo)")
+            continue
+        try:
+            path = run_scenario(scenario, out_dir, model)
+        except Exception as exc:  # noqa: BLE001 - reported, run continues
+            print(f"Failed scenario {scenario['id']}: {exc}", file=sys.stderr)
+            failed.append(scenario["id"])
+            continue
         print(f"Wrote {path}")
+    if failed:
+        print(
+            f"Scenarios failed: {', '.join(failed)}. Re-run the same "
+            "command to resume; finished transcripts are kept.",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 
