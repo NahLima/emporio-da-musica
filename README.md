@@ -220,6 +220,10 @@ The loop is isolated in one class, so replacing it with LangGraph later
   deprecated) with the classic `generate_content` API, not the newer
   Interactions API: it is stable, well documented, and the tool loop is
   fully visible in our code instead of hidden server-side.
+- Tool results are sent back as a `user`-role content with
+  `function_response` parts: the Gemini API rejects role `function`
+  (`400 INVALID_ARGUMENT` on `gemini-3.8-flash`, hit on 2026-10-31
+  while generating the example transcripts).
 - Alternatives evaluated: GPT-4o-mini (mature function calling, similar
   cost, but a new OpenAI account + billing) and Claude Sonnet (strongest
   instruction following, but much more expensive and also a new account).

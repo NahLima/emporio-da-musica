@@ -113,6 +113,7 @@ def run_scenario(scenario: dict, out_dir: Path, model: str) -> Path:
         "",
     ]
     for user_text in scenario["turns"]:
+        print(f"  Turn: {user_text}", flush=True)
         result = agent.chat(user_text)
         lines.append(f"**Customer:** {user_text}")
         lines.append("")
@@ -160,6 +161,11 @@ def main(argv: list[str] | None = None) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     failed = []
     for scenario in SCENARIOS:
+        print(
+            f"Scenario {scenario['id']} — {scenario['title']} "
+            f"(model {model})",
+            flush=True,
+        )
         # Resumable: a scenario whose transcript already exists is skipped,
         # so a run interrupted by a transient 503 can be resumed with the
         # same command instead of regenerating everything.

@@ -482,7 +482,11 @@ class GeminiAgent:
                     )
                 )
             self._contents.append(
-                types.Content(role="function", parts=function_parts)
+                # Function responses are sent as a "user" content: the
+                # Gemini API rejects role "function" (400 INVALID_ARGUMENT
+                # on gemini-3.8-flash, 2026-10-31). The parts still carry
+                # the function name and result.
+                types.Content(role="user", parts=function_parts)
             )
         else:
             reply = (

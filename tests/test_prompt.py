@@ -131,6 +131,12 @@ def test_agent_runs_a_tool_call_and_returns_text(tmp_path):
     assert result["tool_calls"][0]["name"] == "get_store_info"
     assert "Rua 14 de Maio" in str(result["tool_calls"][0]["result"])
     assert client.models.calls == 2
+    # The tool result must be sent back as a "user" content: the Gemini
+    # API rejects role "function" (400 INVALID_ARGUMENT on
+    # gemini-3.8-flash, 2026-10-31).
+    assert all(part.role != "function" for part in agent._contents)
+    assert agent._contents[-2].role == "user"
+    assert agent._contents[-2].parts[0].function_response is not None
 
 
 def test_missing_api_key_raises_a_clear_error(tmp_path):
