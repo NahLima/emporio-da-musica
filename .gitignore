@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local session transcripts (gitignored, per-session JSON)
+sessions/
