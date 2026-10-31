@@ -37,11 +37,39 @@ choice, justified in [Decisions](#decisions).
 ```bash
 git clone https://github.com/NahLima/emporio-da-musica.git
 cd emporio-da-musica
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+```
 
+Then create and activate the virtual environment for your OS. On macOS and
+Linux use `python3`; on Windows use `py` or `python`.
+
+**macOS**
+
+```bash
+python3 --version               # needs Python 3.11+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 cp .env.example .env            # then edit .env and add your key
+```
+
+**Linux (Ubuntu/Debian)**
+
+```bash
+python3 --version               # needs Python 3.11+
+python3 -m venv .venv           # if this fails: sudo apt install python3-venv python3-full
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env            # then edit .env and add your key
+```
+
+**Windows (PowerShell)**
+
+```powershell
+py --version                    # needs Python 3.11+
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env          # then edit .env and add your key
 ```
 
 `.env`:
@@ -54,14 +82,14 @@ GEMINI_MODEL=gemini-2.5-flash   # optional; see "Model" below
 ### 4. Chat with Mel
 
 ```bash
-python -m src.main
+python3 -m src.main              # macOS/Linux; on Windows: py -m src.main
 ```
 
 Options:
 
 ```bash
-python -m src.main --today 2026-02-20 --session-id leticia
-python -m src.main --message "Quanto custa o Takamine GD20?"
+python3 -m src.main --today 2026-02-20 --session-id leticia
+python3 -m src.main --message "Quanto custa o Takamine GD20?"
 ```
 
 - `--today YYYY-MM-DD` sets the reference date used for every deadline
@@ -76,17 +104,17 @@ python -m src.main --message "Quanto custa o Takamine GD20?"
 ### 5. Run the tests
 
 ```bash
-python -m pytest tests/ -q
+python3 -m pytest tests/ -q       # macOS/Linux; on Windows: py -m pytest tests/ -q
 ```
 
-35 tests, no LLM calls, no network. They cover the catalog traps, pricing,
+36 tests, no LLM calls, no network. They cover the catalog traps, pricing,
 order-total divergences, return eligibility on two reference dates, policy
 retrieval and the injection guard.
 
 ### 6. Generate the example transcripts
 
 ```bash
-python scripts/run_examples.py
+python3 scripts/run_examples.py   # macOS/Linux; on Windows: py scripts/run_examples.py
 ```
 
 This runs the 5 scenarios through the **real** agent and writes `.md`
