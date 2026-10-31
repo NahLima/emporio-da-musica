@@ -142,3 +142,36 @@ def test_missing_api_key_raises_a_clear_error(tmp_path):
             session_id="test-nokey",
             sessions_dir=tmp_path,
         )
+
+
+# -- History across restarts ---------------------------------------------------
+
+def test_resumed_session_keeps_llm_context(tmp_path):
+    """A --session-id resumed in a new process must keep _contents.
+
+    Regression: history was loaded from JSON but _contents started empty,
+    so follow-ups like "e o preço dele?" lost the previous product on restart.
+    """
+    agent1 = GeminiAgent(
+        client=FakeClient([FakeResponse(text="O Takamine GD20 custa R$ 2.199.")]),
+        today="2026-02-20",
+        session_id="resume",
+        sessions_dir=tmp_path,
+    )
+    agent1.chat("Quanto custa o Takamine GD20?")
+    assert len(agent1.history) == 2
+
+    agent2 = GeminiAgent(
+        client=FakeClient([FakeResponse(text="Ele custa R$ 2.199.")]),
+        today="2026-02-20",
+        session_id="resume",
+        sessions_dir=tmp_path,
+    )
+    assert len(agent2.history) == 2
+    # The reloaded LLM contents carry the previous turns (user + model).
+    assert len(agent2._contents) == 2
+    assert "Takamine GD20" in agent2._contents[0].parts[0].text
+    result = agent2.chat("E o preço dele?")
+    assert result["reply"] == "Ele custa R$ 2.199."
+    assert agent2.client.models.calls == 1
+

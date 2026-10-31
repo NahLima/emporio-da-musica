@@ -221,7 +221,18 @@ class GeminiAgent:
             self.client = genai.Client(api_key=api_key)
         self.history: list[dict] = self._load_history()
         # Gemini contents (user/model/function turns) for this process.
-        self._contents: list[types.Content] = []
+        # Seed them from the persisted history so a resumed session
+        # (--session-id) really keeps context across restarts: without this,
+        # follow-ups like "e o preço dele?" would lose the previous product
+        # when the CLI was started again.
+        self._contents: list[types.Content] = [
+            types.Content(
+                role="user" if entry.get("role") == "user" else "model",
+                parts=[types.Part(text=entry.get("content", ""))],
+            )
+            for entry in self.history
+            if entry.get("content")
+        ]
 
     # -- History ------------------------------------------------------------
     @staticmethod
