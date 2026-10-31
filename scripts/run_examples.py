@@ -150,7 +150,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
-    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     for scenario in SCENARIOS:

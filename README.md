@@ -76,7 +76,7 @@ copy .env.example .env          # then edit .env and add your key
 
 ```ini
 GEMINI_API_KEY=your-key-here
-GEMINI_MODEL=gemini-2.5-flash   # optional; see "Model" below
+GEMINI_MODEL=gemini-3.8-flash   # optional; see "Model" below
 ```
 
 ### 4. Chat with Mel
@@ -155,7 +155,7 @@ Customer message (PT-BR)
 └──────────────┬───────────────┘
                ▼
 ┌──────────────────────────────┐
-│  Gemini (gemini-2.5-flash)        │  system prompt: persona Mel + rules
+│  Gemini (gemini-3.8-flash)        │  system prompt: persona Mel + rules
 │  generate_content loop            │  temperature 0.3
 └──────────────┬───────────────┘
                │ function calls
@@ -186,7 +186,7 @@ no functional gain, and would make the evaluator's run harder to reproduce.
 The loop is isolated in one class, so replacing it with LangGraph later
 (see [Next steps](#limitations-and-next-steps)) is a contained change, not a rewrite.
 
-### Gemini via the API, model `gemini-2.5-flash` (pinned)
+### Gemini via the API, model `gemini-3.8-flash` (pinned)
 
 - The author already has a paid Gemini plan, so this choice needs no new
   account, billing setup or key — the lowest-friction option under a
@@ -196,8 +196,14 @@ The loop is isolated in one class, so replacing it with LangGraph later
   reliable tool routing and fluent Portuguese, not frontier reasoning.
   A Pro/Sonnet-class model would cost 5–20× more per token without
   changing any answer the customer receives.
-- The model is pinned (`gemini-2.5-flash`) and configurable via
-  `GEMINI_MODEL` — e.g. `gemini-2.5-pro` can be set without code changes.
+- The model is pinned (`gemini-3.8-flash`) and configurable via
+  `GEMINI_MODEL` without code changes.
+- Why 3.8 Flash and not 2.5 Flash: on 2026-10-31 the Gemini API returned
+  `404 NOT_FOUND` for `gemini-2.5-flash` on a newly created API key
+  ("no longer available to new users", recommending `gemini-3.8-flash`),
+  while `gemini-3.8-flash` answered via `generate_content`. The pinned
+  model was therefore changed from 2.5 Flash to 3.8 Flash before the
+  example transcripts were generated.
 - The SDK is `google-genai` (the current SDK; `google-generativeai` is
   deprecated) with the classic `generate_content` API, not the newer
   Interactions API: it is stable, well documented, and the tool loop is

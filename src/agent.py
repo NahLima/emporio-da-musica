@@ -35,7 +35,7 @@ from .prompts import (
 )
 from .tools import StoreTools, is_injection_attempt
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.8-flash"
 MAX_TOOL_TURNS = 8
 
 

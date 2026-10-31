@@ -45,7 +45,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--model",
         default=None,
-        help="Gemini model id. Default: GEMINI_MODEL or gemini-2.5-flash.",
+        help="Gemini model id. Default: GEMINI_MODEL or gemini-3.8-flash.",
     )
     return parser.parse_args(argv)
 
