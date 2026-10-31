@@ -47,11 +47,18 @@ RETRY_DELAYS = (30, 90)
 
 
 def _is_transient_error(exc: Exception) -> bool:
-    """True for errors worth retrying: overload, rate limit, 5xx, disconnect."""
+    """True for errors worth retrying: overload, rate limit, 5xx, disconnect.
+
+    Not transient: a quota error with ``limit: 0`` (e.g. a Pro model on the
+    free tier, whose allowance is zero) — retrying in 30s cannot help when
+    the API itself says to retry in ~13h.
+    """
+    message = str(exc)
+    if "limit: 0" in message:
+        return False
     code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
     if isinstance(code, int) and code in (429, 500, 502, 503, 504):
         return True
-    message = str(exc)
     if any(
         token in message
         for token in (

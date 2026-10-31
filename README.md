@@ -224,6 +224,12 @@ The loop is isolated in one class, so replacing it with LangGraph later
   `function_response` parts: the Gemini API rejects role `function`
   (`400 INVALID_ARGUMENT` on `gemini-3.8-flash`, hit on 2026-10-31
   while generating the example transcripts).
+- Transient errors are retried (503/429/5xx, 30s then 90s), except a
+  quota error with `limit: 0`, which fails fast: Pro models
+  (`gemini-pro-latest` = `gemini-3.1-pro`) have **zero free-tier quota**
+  on a fresh API key (verified 2026-10-31, the API itself says to retry
+  in ~13h), so they only work with billing enabled. The free-tier
+  models are the Flash family (`gemini-3.8-flash`, `gemini-flash-lite-latest`).
 - Alternatives evaluated: GPT-4o-mini (mature function calling, similar
   cost, but a new OpenAI account + billing) and Claude Sonnet (strongest
   instruction following, but much more expensive and also a new account).

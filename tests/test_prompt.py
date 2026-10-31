@@ -211,6 +211,33 @@ def test_non_transient_error_is_not_retried(tmp_path):
     assert client.models.calls == 1
 
 
+def test_quota_limit_zero_is_not_retried(tmp_path):
+    """A 429 with limit 0 (Pro on the free tier) must fail fast.
+
+    Regression: 2026-10-31, gemini-pro-latest (= gemini-3.1-pro) returned
+    429 RESOURCE_EXHAUSTED with free-tier limit 0 and a 13h retry delay;
+    retrying after 30s only wasted time.
+    """
+    client = FlakyClient(
+        [Exception(
+            "429 RESOURCE_EXHAUSTED. Quota exceeded for metric: "
+            "generate_content_free_tier_requests, limit: 0, model: "
+            "gemini-3.1-pro. Please retry in 13h19m59s."
+        )],
+        [FakeResponse(text="never")],
+    )
+    agent = GeminiAgent(
+        client=client,
+        today="2026-02-20",
+        session_id="test-quota-zero",
+        sessions_dir=tmp_path,
+    )
+    agent.retry_delays = (0, 0)
+    with pytest.raises(Exception, match="429 RESOURCE_EXHAUSTED"):
+        agent.chat("Oi!")
+    assert client.models.calls == 1
+
+
 # -- History across restarts ---------------------------------------------------
 
 def test_resumed_session_keeps_llm_context(tmp_path):
