@@ -107,7 +107,7 @@ python3 -m src.main --message "Quanto custa o Takamine GD20?"
 python3 -m pytest tests/ -q       # macOS/Linux; on Windows: py -m pytest tests/ -q
 ```
 
-36 tests, no LLM calls, no network. They cover the catalog traps, pricing,
+39 tests, no LLM calls, no network. They cover the catalog traps, pricing,
 order-total divergences, return eligibility on two reference dates, policy
 retrieval and the injection guard.
 
