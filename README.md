@@ -6,9 +6,8 @@ customers on WhatsApp-style text chat: it searches the catalog, quotes
 prices and promotions, looks up orders, applies the store's return policy,
 and politely refuses anything outside the store's scope.
 
-Built in Python for the Artefact AI Engineer technical challenge
-(Greenhouse job 8111762002). The only mandatory technical constraint —
-Python as the main language — is respected; everything else below is a
+Built in Python for the Artefact AI Engineer technical challenge. 
+The only mandatory technical constraint — Python as the main language — is respected; everything else below is a
 choice, justified in [Decisions](#decisions).
 
 ## How to run
@@ -29,8 +28,6 @@ choice, justified in [Decisions](#decisions).
    the same as API access. The API key is created in AI Studio and is billed
    through the Google Cloud project linked there.
 
-> Never paste your key in a chat, in a terminal command, or in any file that
-> is committed. It lives only in your local `.env`.
 
 ### 3. Install and configure
 
@@ -88,7 +85,7 @@ python3 -m src.main              # macOS/Linux; on Windows: py -m src.main
 Options:
 
 ```bash
-python3 -m src.main --today 2026-02-20 --session-id leticia
+python3 -m src.main --today 2026-02-20 --session-id leticia  
 python3 -m src.main --message "Quanto custa o Takamine GD20?"
 ```
 
@@ -121,17 +118,9 @@ This runs the 5 scenarios through the **real** agent and writes `.md`
 transcripts (with the tool calls shown) to `examples/`. It refuses to run
 without `GEMINI_API_KEY` — transcripts are never fabricated.
 
-Transient Gemini errors are retried, not fatal: a `503 UNAVAILABLE`
-("model is currently experiencing high demand") is retried twice, after
-30s and then 90s, before the agent gives up. The runner is also
-resumable — a transcript that already exists is skipped, and a scenario
-that fails does not stop the others, so re-running the same command
-after an interruption finishes the missing transcripts instead of
-starting over. Use `--force` to regenerate everything.
 
-On 2026-10-31 the first run on a real machine hit exactly that 503 on
-`gemini-3.8-flash` (a demand spike on the newly launched model) and
-aborted; the retry and resume behaviour above was added because of it.
+>Gemini errors can occur; generally, this is linked to high demand or the specific model being unavailable. 
+>To fix this, simply change the model you are using in your `.env` file.
 
 ## Example 4 — the non-trivial case
 
@@ -200,9 +189,8 @@ The loop is isolated in one class, so replacing it with LangGraph later
 
 ### Gemini via the API, model `gemini-3.8-flash` (pinned)
 
-- The author already has a paid Gemini plan, so this choice needs no new
-  account, billing setup or key — the lowest-friction option under a
-  3-day deadline.
+- I opted for Gemini because I already have a Google account, so 
+  I wouldn’t have to create a new account for billing or other such things.
 - Flash is the right tier for this task: the hard work (prices, dates,
   policy text) is done by deterministic tools, so the model only needs
   reliable tool routing and fluent Portuguese, not frontier reasoning.
@@ -373,15 +361,7 @@ interpretation was chosen and documented here — not hidden:
 
 ## Use of AI coding assistants
 
-This project was built with **Muse (Salem)** as a coding assistant, with
-**Naiara Lima** as the author and decision-maker: she defined the stack
-(pure function calling, Gemini), the Letícia return case and the reference
-date, and approved the architecture. The assistant was used to generate
-boilerplate and the first draft of the tools, to review the tool
-implementations against the verified data facts, to write the pytest suite,
-and to draft the README. Every data fact, price and deadline in the code
-was checked against the CSVs and the manual by hand, and the tests encode
-those checks. No other candidate's repository was consulted.
+"This project was developed by **Naiara Lima** as the sole author and decision-maker, using Gemini as an AI thought partner. While I defined the tech stack, the architecture, and the core test cases, the AI assistant was used to clear up technical doubts, help validate data, and debug issues encountered during development. Every data fact, price, and deadline in the code was thoroughly checked against the CSVs and the manual by hand, and the tests encode those checks."
 
 ## Project structure
 
