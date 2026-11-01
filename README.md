@@ -381,7 +381,7 @@ emporio-da-musica/
 │   └── prompts.py            # system prompt, persona Mel, refusal replies
 ├── tests/
 │   ├── test_tools.py         # 28 tests: catalog, prices, orders, returns
-│   └── test_prompt.py        # 7 tests: prompt rules, injection guard, loop
+│   └── test_prompt.py        # 11 tests: prompt rules, injection guard, loop
 ├── scripts/
 │   └── run_examples.py       # generates the 5 example transcripts
 ├── examples/                 # generated transcripts (see examples/README.md)
